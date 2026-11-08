@@ -50,7 +50,7 @@
      * 🏷️ ΕΚΔΟΣΗ ΕΦΑΡΜΟΓΗΣ (APP VERSION) - ΑΛΛΑΞΤΕ ΤΗΝ ΕΔΩ ΚΑΡΦΩΤΑ:
      * Ενημερώνει αυτόματα τόσο το παράθυρο πληροφοριών (Modal) όσο και την κονσόλα (Console)!
      * ======================================================================== */
-    const APP_VERSION = '1.2.0';
+    const APP_VERSION = '1.2.1';
   </script>
 
   <style>
@@ -950,60 +950,87 @@
     }
 
     /* ==========================================================================
-       DEMO MODE STYLES (Active only when ?demo=true)
+       DEMO MODE STYLES (Floating Bottom Capsule - Active only when ?demo=true)
        ========================================================================== */
     .demo-banner {
       display: none;
-      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%);
+      position: fixed;
+      bottom: max(16px, env(safe-area-inset-bottom, 16px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 520px;
+      z-index: 900;
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(49, 46, 129, 0.95) 50%, rgba(67, 56, 202, 0.95) 100%);
       color: #ffffff;
-      padding: 10px 14px;
-      border-radius: var(--radius-md);
-      margin-bottom: 10px;
-      box-shadow: 0 4px 16px -2px rgba(79, 70, 229, 0.35);
-      animation: slideUpFade 0.3s ease;
+      padding: 8px 12px;
+      border-radius: var(--radius-full);
+      box-shadow: 0 10px 32px -4px rgba(15, 23, 42, 0.45), 0 4px 14px -2px rgba(79, 70, 229, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      animation: slideUpFloat 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUpFloat {
+      from {
+        opacity: 0;
+        transform: translate(-50%, 20px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+    }
+
+    body.has-demo-banner {
+      padding-bottom: max(84px, env(safe-area-inset-bottom, 84px));
     }
 
     .demo-banner-content {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
+      width: 100%;
     }
 
     .demo-tag {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.825rem;
+      gap: 5px;
+      font-size: 0.8rem;
       letter-spacing: -0.01em;
+      white-space: nowrap;
+      user-select: none;
     }
 
     .demo-sparkle {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
 
     .demo-tag strong {
       font-weight: 800;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
     }
 
     .demo-sub {
-      opacity: 0.9;
-      font-size: 0.775rem;
+      opacity: 0.85;
+      font-size: 0.72rem;
+      font-weight: 400;
     }
 
     .demo-controls {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .demo-btn {
       border: none;
       cursor: pointer;
-      padding: 5px 11px;
+      padding: 6px 11px;
       border-radius: var(--radius-full);
       font-size: 0.75rem;
       font-weight: 700;
@@ -1013,6 +1040,7 @@
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       font-family: inherit;
       user-select: none;
+      white-space: nowrap;
     }
 
     .demo-btn:active {
@@ -1020,26 +1048,56 @@
     }
 
     .demo-btn.secondary {
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.16);
       color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.28);
       backdrop-filter: blur(4px);
     }
 
     .demo-btn.secondary:hover {
-      background: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.26);
     }
 
     .demo-btn.primary {
       background: #ffffff;
       color: #4338ca;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     .demo-btn.primary:hover {
       background: #f8fafc;
       transform: translateY(-1px);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 640px) {
+      .sticky-header {
+        padding: max(8px, env(safe-area-inset-top, 8px)) 0 8px;
+        margin-bottom: 2px;
+      }
+      .top-meta-row {
+        margin-bottom: 6px;
+      }
+      .app-title {
+        font-size: 1.18rem;
+      }
+      .app-subtitle {
+        font-size: 0.775rem;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .demo-sub {
+        display: none;
+      }
+      .demo-btn-label {
+        display: none;
+      }
+      .demo-btn {
+        padding: 5px 9px;
+        font-size: 0.72rem;
+      }
     }
 
     /* ==========================================================================
@@ -1253,31 +1311,6 @@
        ======================================================================== -->
   <header class="sticky-header">
     <div class="app-container">
-      <!-- Demo Mode Banner (Active ONLY when URL contains ?demo=true) -->
-      <div id="demoBanner" class="demo-banner">
-        <div class="demo-banner-content">
-          <div class="demo-tag">
-            <span class="demo-sparkle">✨</span>
-            <strong>DEMO MODE</strong>
-            <span class="demo-sub">• Προσομοίωση Εκδρομής</span>
-          </div>
-          <div class="demo-controls">
-            <button id="demoPauseBtn" class="demo-btn secondary" type="button" title="Παύση / Συνέχιση προσομοίωσης">
-              <span id="demoPauseIcon">⏸️</span>
-              <span id="demoPauseText">Παύση</span>
-            </button>
-            <button id="demoResetBtn" class="demo-btn secondary" type="button" title="Επανεκκίνηση σεναρίου από την αρχή">
-              <span>🔄</span>
-              <span>Επανεκκίνηση</span>
-            </button>
-            <button id="demoExitBtn" class="demo-btn primary" type="button" title="Επιστροφή στην κανονική ζωντανή λειτουργία">
-              <span>Έξοδος (Live)</span>
-              <span>➔</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div class="top-meta-row">
         <!-- Pulse Status Badge -->
         <div class="live-badge" title="Συνεχής παρακολούθηση σε πραγματικό χρόνο">
@@ -1474,6 +1507,31 @@
     </footer>
   </main>
 
+  <!-- Floating Bottom Demo Mode Capsule (Active ONLY when URL contains ?demo=true) -->
+  <aside id="demoBanner" class="demo-banner" aria-label="Χειρισμός Προσομοίωσης Demo">
+    <div class="demo-banner-content">
+      <div class="demo-tag">
+        <span class="demo-sparkle">✨</span>
+        <strong>DEMO</strong>
+        <span class="demo-sub">• Προσομοίωση</span>
+      </div>
+      <div class="demo-controls">
+        <button id="demoPauseBtn" class="demo-btn secondary" type="button" title="Παύση / Συνέχιση προσομοίωσης">
+          <span id="demoPauseIcon">⏸️</span>
+          <span id="demoPauseText">Παύση</span>
+        </button>
+        <button id="demoResetBtn" class="demo-btn secondary" type="button" title="Επανεκκίνηση σεναρίου από την αρχή">
+          <span>🔄</span>
+          <span class="demo-btn-label">Επανεκκίνηση</span>
+        </button>
+        <button id="demoExitBtn" class="demo-btn primary" type="button" title="Επιστροφή στην κανονική ζωντανή λειτουργία">
+          <span>Live</span>
+          <span>➔</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
   <!-- Toast Notification Message -->
   <div id="toast" class="toast-container" role="status" aria-live="polite">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1499,7 +1557,7 @@
           </svg>
         </div>
         <h2 id="modalTitle" class="modal-title">Live School Trip Tracker</h2>
-        <span id="modalVersion" class="modal-version">Version 1.2.0</span>
+        <span id="modalVersion" class="modal-version">Version 1.2.1</span>
       </div>
 
       <div class="modal-divider"></div>
@@ -2145,8 +2203,9 @@
 
       function startPollingEngine() {
         if (isDemoMode) {
-          // Display the demo banner
+          // Display the floating bottom demo banner & add body bottom padding
           demoBanner.style.display = 'block';
+          document.body.classList.add('has-demo-banner');
 
           // Update footer text to inform about demo
           const footerBadge = document.querySelector('.footer-badge span');
@@ -2340,7 +2399,7 @@
       // ======================================================================
       // DEVELOPER & LICENSE CONSOLE CREDITS & VERSION SYNC
       // ======================================================================
-      const currentVersion = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '1.2.0';
+      const currentVersion = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '1.2.1';
       const modalVersionEl = document.getElementById('modalVersion');
       if (modalVersionEl) {
         modalVersionEl.textContent = 'Version ' + currentVersion;
