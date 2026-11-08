@@ -1,0 +1,2370 @@
+<!--
+/*
+ * Copyright (C) 2026 [GEORGE PETRAKIS]
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+-->
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Live School Trip Tracker • Ζωντανή Ενημέρωση Εκδρομής</title>
+  <meta name="description" content="Ζωντανή ενημέρωση γονέων σε πραγματικό χρόνο κατά τη διάρκεια σχολικής εκδρομής." />
+  <meta property="og:title" content="Live School Trip Tracker • Ζωντανή Ενημέρωση Εκδρομής" />
+  <meta property="og:description" content="Άμεση, συνεχής ενημέρωση γονέων με live polling και χρονολόγιο γεγονότων." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#2563eb" />
+
+  <!-- ========================================================================
+       ⚙️ ΡΥΘΜΙΣΗ ΠΗΓΗΣ ΔΕΔΟΜΕΝΩΝ (GOOGLE SHEETS CSV DATA SOURCE)
+       ------------------------------------------------------------------------
+       ΕΔΩ ΑΛΛΑΖΕΤΕ ΤΟ ΣΥΝΔΕΣΜΟ (URL) ΤΗΣ ΕΚΔΡΟΜΗΣ ΚΑΡΦΩΤΑ:
+
+       Βήματα για νέο Google Sheet:
+       1. Ανοίξτε το Google Sheet σας με τις 3 στήλες: Ώρα | Γεγονός | Σχόλιο
+       2. Επιλέξτε: Αρχείο (File) ➔ Κοινοποίηση (Share) ➔ Δημοσίευση στον ιστό (Publish to web)
+       3. Στο αναδυόμενο παράθυρο επιλέξτε μορφή: "Τιμές διαχωρισμένες με κόμματα (.csv)"
+       4. Πατήστε "Δημοσίευση" και επικολλήστε το link στο πεδίο CSV_DATA_URL παρακάτω:
+       ======================================================================== -->
+  <script>
+    /* ========================================================================
+     * 📌 ΚΑΡΦΩΤΟ LINK GOOGLE SHEETS CSV (ΑΛΛΑΞΤΕ ΤΟ ΕΔΩ):
+     * ======================================================================== */
+    const CSV_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQKv_plN7sVuSLj-oTUvUFvBd8Es3UU48cl6H0g3Gna9KR1wL-SbAQ6Ga7kJ-ozlOeyfsUzVeDB980G/pub?gid=0&single=true&output=csv';
+
+    /* ⏱️ ΧΡΟΝΟΣ ΑΥΤΟΜΑΤΟΥ ΕΛΕΓΧΟΥ ΣΕ ΔΕΥΤΕΡΟΛΕΠΤΑ (προεπιλογή: 30) */
+    const REFRESH_INTERVAL_SECONDS = 30;
+
+    /* ========================================================================
+     * 🏷️ ΕΚΔΟΣΗ ΕΦΑΡΜΟΓΗΣ (APP VERSION) - ΑΛΛΑΞΤΕ ΤΗΝ ΕΔΩ ΚΑΡΦΩΤΑ:
+     * Ενημερώνει αυτόματα τόσο το παράθυρο πληροφοριών (Modal) όσο και την κονσόλα (Console)!
+     * ======================================================================== */
+    const APP_VERSION = '1.2.0';
+  </script>
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM & THEME TOKENS (LIGHT & DARK ADAPTIVE)
+       ========================================================================== */
+    :root {
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", sans-serif;
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #ffffff;
+      --bg-muted: #f1f5f9;
+      --bg-subtle: #f8fafc;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #94a3b8;
+      
+      --border-subtle: #e2e8f0;
+      --border-accent: #cbd5e1;
+      
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-soft: #eff6ff;
+      --primary-border: #bfdbfe;
+      
+      --emerald: #10b981;
+      --emerald-soft: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      
+      --amber: #f59e0b;
+      --amber-soft: #fffbeb;
+      --amber-border: #fde68a;
+      
+      --rose: #ef4444;
+      --rose-soft: #fef2f2;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+      --shadow-highlight: 0 8px 28px -4px rgba(37, 99, 235, 0.14), 0 4px 12px -2px rgba(37, 99, 235, 0.08);
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      
+      --timeline-spine: #cbd5e1;
+      --header-blur-bg: rgba(248, 250, 252, 0.85);
+    }
+
+    /* Dark Mode Theme */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg-page: #090d16;
+        --bg-surface: #111827;
+        --bg-surface-elevated: #1e293b;
+        --bg-muted: #1e293b;
+        --bg-subtle: #0f172a;
+        
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-tertiary: #64748b;
+        
+        --border-subtle: #1e293b;
+        --border-accent: #334155;
+        
+        --primary: #3b82f6;
+        --primary-hover: #60a5fa;
+        --primary-soft: rgba(59, 130, 246, 0.15);
+        --primary-border: rgba(59, 130, 246, 0.35);
+        
+        --emerald-soft: rgba(16, 185, 129, 0.15);
+        --emerald-border: rgba(16, 185, 129, 0.3);
+        
+        --shadow-card: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+        --shadow-highlight: 0 8px 30px -4px rgba(59, 130, 246, 0.25);
+        
+        --timeline-spine: #334155;
+        --header-blur-bg: rgba(9, 13, 22, 0.85);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg-page: #090d16;
+      --bg-surface: #111827;
+      --bg-surface-elevated: #1e293b;
+      --bg-muted: #1e293b;
+      --bg-subtle: #0f172a;
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-tertiary: #64748b;
+      
+      --border-subtle: #1e293b;
+      --border-accent: #334155;
+      
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+      --primary-soft: rgba(59, 130, 246, 0.15);
+      --primary-border: rgba(59, 130, 246, 0.35);
+      
+      --emerald-soft: rgba(16, 185, 129, 0.15);
+      --emerald-border: rgba(16, 185, 129, 0.3);
+      
+      --shadow-card: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+      --shadow-highlight: 0 8px 30px -4px rgba(59, 130, 246, 0.25);
+      
+      --timeline-spine: #334155;
+      --header-blur-bg: rgba(9, 13, 22, 0.85);
+    }
+
+    :root[data-theme="light"] {
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #ffffff;
+      --bg-muted: #f1f5f9;
+      --bg-subtle: #f8fafc;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #94a3b8;
+      
+      --border-subtle: #e2e8f0;
+      --border-accent: #cbd5e1;
+      
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-soft: #eff6ff;
+      --primary-border: #bfdbfe;
+      
+      --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+      --shadow-highlight: 0 8px 28px -4px rgba(37, 99, 235, 0.14), 0 4px 12px -2px rgba(37, 99, 235, 0.08);
+      
+      --timeline-spine: #cbd5e1;
+      --header-blur-bg: rgba(248, 250, 252, 0.85);
+    }
+
+    /* ==========================================================================
+       GLOBAL RESET & BASE STYLES
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      line-height: 1.5;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-stack);
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+      padding-bottom: max(40px, env(safe-area-inset-bottom, 40px));
+    }
+
+    /* App Viewport Container (Mobile First, Max 640px) */
+    .app-container {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       STICKY TOP NAV / HEADER
+       ========================================================================== */
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      width: 100%;
+      background: var(--header-blur-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: max(12px, env(safe-area-inset-top, 12px)) 0 10px;
+      margin-bottom: 4px;
+    }
+
+    .top-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    /* Live Pulsing Beacon */
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px 4px 8px;
+      border-radius: var(--radius-full);
+      background: var(--emerald-soft);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    .radar-pulse-box {
+      position: relative;
+      width: 10px;
+      height: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radar-pulse-box::before {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: var(--emerald);
+      opacity: 0.75;
+      animation: radarPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    .radar-pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--emerald);
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes radarPulse {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.8;
+      }
+      70% {
+        transform: scale(2.6);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(2.6);
+        opacity: 0;
+      }
+    }
+
+    /* Top Utility Actions */
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-muted);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    .icon-btn.active-bell {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-color: var(--primary-border);
+    }
+
+    /* Spinning refresh icon animation */
+    .icon-btn.is-spinning svg {
+      animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Header Title & Branding */
+    .brand-section {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .app-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-subtitle {
+      font-size: 0.825rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* ==========================================================================
+       STATUS BAR & LIVE SYNC METRICS CARD
+       ========================================================================== */
+    .summary-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .summary-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.825rem;
+      color: var(--text-secondary);
+    }
+
+    .stat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .stat-chip svg {
+      width: 15px;
+      height: 15px;
+      color: var(--text-tertiary);
+    }
+
+    .stat-chip strong {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* Refresh Progress & Status */
+    .sync-status-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.775rem;
+      color: var(--text-secondary);
+      margin-left: auto;
+    }
+
+    .refresh-countdown-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-muted);
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .mini-progress-ring {
+      width: 14px;
+      height: 14px;
+      transform: rotate(-90deg);
+    }
+
+    .mini-progress-ring circle {
+      fill: transparent;
+      stroke-width: 2.5;
+    }
+
+    .mini-progress-ring .bg {
+      stroke: var(--border-subtle);
+    }
+
+    .mini-progress-ring .bar {
+      stroke: var(--primary);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.9s linear;
+    }
+
+    /* Offline / Error Banner */
+    .network-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      background: var(--amber-soft);
+      border: 1px solid var(--amber-border);
+      color: #92400e;
+      font-size: 0.8rem;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .network-banner.show {
+      display: flex;
+    }
+
+    .network-banner svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    /* Search & Filter Bar */
+    .search-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 38px;
+      background: var(--bg-muted);
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      padding: 0 12px 0 36px;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .search-input:focus {
+      background: var(--bg-surface);
+      border-color: var(--primary-border);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+      pointer-events: none;
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: 2px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-clear-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ==========================================================================
+       TIMELINE FEED ARCHITECTURE
+       ========================================================================== */
+    .timeline-container {
+      position: relative;
+      padding-left: 28px;
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* The Continuous Spine Line */
+    .timeline-container::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 14px;
+      bottom: 24px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--primary) 0%, var(--timeline-spine) 15%, var(--timeline-spine) 90%, transparent 100%);
+      border-radius: 2px;
+    }
+
+    /* Individual Timeline Item */
+    .timeline-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease;
+      animation: slideUpFade 0.35s ease backwards;
+    }
+
+    @keyframes slideUpFade {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Timeline Node (Bullet on the line) */
+    .timeline-node {
+      position: absolute;
+      left: -28px;
+      top: 16px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+
+    .timeline-bullet {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 2.5px solid var(--text-tertiary);
+      transition: all 0.2s ease;
+    }
+
+    /* Latest Item Special Beacon */
+    .timeline-item.is-latest .timeline-bullet {
+      width: 16px;
+      height: 16px;
+      background: var(--primary);
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 0 3px var(--primary-border), 0 2px 8px rgba(37, 99, 235, 0.4);
+      animation: beaconPulse 2.5s infinite;
+    }
+
+    @keyframes beaconPulse {
+      0% {
+        box-shadow: 0 0 0 2px var(--primary-border), 0 0 0 0 rgba(37, 99, 235, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 3px var(--primary-border), 0 0 0 8px rgba(37, 99, 235, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 2px var(--primary-border), 0 0 0 0 rgba(37, 99, 235, 0);
+      }
+    }
+
+    /* Timeline Card */
+    .timeline-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timeline-card:hover {
+      border-color: var(--border-accent);
+      box-shadow: 0 6px 24px -2px rgba(15, 23, 42, 0.08);
+      transform: translateY(-1px);
+    }
+
+    /* Highlighted Latest Update Card */
+    .timeline-item.is-latest .timeline-card {
+      border: 1.5px solid var(--primary-border);
+      box-shadow: var(--shadow-highlight);
+      background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface) 100%);
+    }
+
+    .timeline-item.is-latest .timeline-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #6366f1, #10b981);
+    }
+
+    /* Card Header */
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .card-badges-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Time Badge Pill */
+    .time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-muted);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      font-size: 0.775rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+
+    .time-badge svg {
+      width: 12px;
+      height: 12px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    /* Latest "NEW" Tag */
+    .badge-new {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #ffffff;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 0.675rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    }
+
+    .badge-new svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    .badge-index {
+      font-size: 0.725rem;
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    /* Event Title */
+    .event-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.35;
+      letter-spacing: -0.015em;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    /* Comment Box (Styled Editorial Bubble) */
+    .comment-block {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      line-height: 1.45;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      word-break: break-word;
+    }
+
+    .comment-icon {
+      width: 15px;
+      height: 15px;
+      color: var(--primary);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .comment-text {
+      flex: 1;
+    }
+
+    /* Special ETA / Highlight detection inside comment */
+    .eta-highlight {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* ==========================================================================
+       EMPTY & SKELETON STATES
+       ========================================================================== */
+    .skeleton-item {
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .skeleton-line {
+      height: 14px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border-subtle) 50%, var(--bg-muted) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    .skeleton-line.short { width: 35%; height: 20px; border-radius: var(--radius-full); }
+    .skeleton-line.medium { width: 70%; height: 18px; }
+    .skeleton-line.long { width: 92%; }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-accent);
+      border-radius: var(--radius-lg);
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .empty-state svg {
+      width: 44px;
+      height: 44px;
+      color: var(--text-tertiary);
+    }
+
+    .empty-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .empty-text {
+      font-size: 0.85rem;
+      max-width: 340px;
+      line-height: 1.4;
+    }
+
+    /* ==========================================================================
+       FOOTER & TOAST
+       ========================================================================== */
+    .app-footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.775rem;
+      color: var(--text-tertiary);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .footer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: var(--bg-muted);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.725rem;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: var(--radius-full);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      font-size: 0.825rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-container.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .toast-container svg {
+      width: 16px;
+      height: 16px;
+      color: var(--emerald);
+    }
+
+    /* Accessibility Focus Styles */
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* Micro Animation for New Incoming Items */
+    .highlight-flash {
+      animation: highlightFlash 1.6s ease;
+    }
+
+    @keyframes highlightFlash {
+      0% {
+        background-color: var(--primary-soft);
+      }
+      100% {
+        background-color: var(--bg-surface);
+      }
+    }
+
+    /* ==========================================================================
+       DEMO MODE STYLES (Active only when ?demo=true)
+       ========================================================================== */
+    .demo-banner {
+      display: none;
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%);
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      box-shadow: 0 4px 16px -2px rgba(79, 70, 229, 0.35);
+      animation: slideUpFade 0.3s ease;
+    }
+
+    .demo-banner-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .demo-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.825rem;
+      letter-spacing: -0.01em;
+    }
+
+    .demo-sparkle {
+      font-size: 0.95rem;
+    }
+
+    .demo-tag strong {
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .demo-sub {
+      opacity: 0.9;
+      font-size: 0.775rem;
+    }
+
+    .demo-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .demo-btn {
+      border: none;
+      cursor: pointer;
+      padding: 5px 11px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+      user-select: none;
+    }
+
+    .demo-btn:active {
+      transform: scale(0.95);
+    }
+
+    .demo-btn.secondary {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(4px);
+    }
+
+    .demo-btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .demo-btn.primary {
+      background: #ffffff;
+      color: #4338ca;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .demo-btn.primary:hover {
+      background: #f8fafc;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ==========================================================================
+       FOOTER INFO BUTTON & ABOUT MODAL (ENGLISH)
+       ========================================================================== */
+    .footer-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-info-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full);
+      background: var(--bg-muted);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-tertiary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+
+    .footer-info-btn:hover {
+      background: var(--bg-surface);
+      color: var(--primary);
+      border-color: var(--primary-border);
+      transform: scale(1.08);
+    }
+
+    .footer-info-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    /* Modal Dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25);
+      position: relative;
+      transform: scale(0.94) translateY(8px);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--bg-muted);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      border-color: var(--border-accent);
+    }
+
+    .modal-close-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 2.2;
+    }
+
+    .modal-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      padding-top: 4px;
+    }
+
+    .modal-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-full);
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-border);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2px;
+    }
+
+    .modal-icon-badge svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .modal-version {
+      font-size: 0.775rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      background: var(--bg-muted);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+      display: inline-block;
+    }
+
+    .modal-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 16px 0;
+      width: 100%;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .info-label {
+      font-size: 0.675rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+
+    .info-value {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .license-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.85rem;
+      transition: color 0.15s ease;
+    }
+
+    .license-link:hover {
+      color: var(--primary-hover);
+      text-decoration: underline;
+    }
+
+    .license-link svg {
+      width: 12px;
+      height: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       STICKY APP HEADER
+       ======================================================================== -->
+  <header class="sticky-header">
+    <div class="app-container">
+      <!-- Demo Mode Banner (Active ONLY when URL contains ?demo=true) -->
+      <div id="demoBanner" class="demo-banner">
+        <div class="demo-banner-content">
+          <div class="demo-tag">
+            <span class="demo-sparkle">✨</span>
+            <strong>DEMO MODE</strong>
+            <span class="demo-sub">• Προσομοίωση Εκδρομής</span>
+          </div>
+          <div class="demo-controls">
+            <button id="demoPauseBtn" class="demo-btn secondary" type="button" title="Παύση / Συνέχιση προσομοίωσης">
+              <span id="demoPauseIcon">⏸️</span>
+              <span id="demoPauseText">Παύση</span>
+            </button>
+            <button id="demoResetBtn" class="demo-btn secondary" type="button" title="Επανεκκίνηση σεναρίου από την αρχή">
+              <span>🔄</span>
+              <span>Επανεκκίνηση</span>
+            </button>
+            <button id="demoExitBtn" class="demo-btn primary" type="button" title="Επιστροφή στην κανονική ζωντανή λειτουργία">
+              <span>Έξοδος (Live)</span>
+              <span>➔</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-meta-row">
+        <!-- Pulse Status Badge -->
+        <div class="live-badge" title="Συνεχής παρακολούθηση σε πραγματικό χρόνο">
+          <div class="radar-pulse-box">
+            <div class="radar-pulse-dot"></div>
+          </div>
+          <span>LIVE • ΕΝΕΡΓΗ ΜΕΤΑΔΟΣΗ</span>
+        </div>
+
+        <!-- Utility Controls -->
+        <div class="top-actions">
+          <!-- Audio Alert Toggle -->
+          <button id="soundToggleBtn" class="icon-btn" title="Ειδοποίηση με ήχο σε νέο γεγονός" aria-label="Ειδοποίηση ήχου">
+            <svg id="soundIconOff" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+            <svg id="soundIconOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: none;">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </button>
+
+          <!-- Dark Mode Toggle -->
+          <button id="themeToggleBtn" class="icon-btn" title="Εναλλαγή θέματος (Φωτεινό / Σκοτεινό)" aria-label="Εναλλαγή θέματος">
+            <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: none;">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <!-- Share Button -->
+          <button id="shareBtn" class="icon-btn" title="Κοινοποίηση συνδέσμου σε γονείς" aria-label="Κοινοποίηση">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+          </button>
+
+          <!-- Manual Refresh Button -->
+          <button id="refreshBtn" class="icon-btn" title="Χειροκίνητη ανανέωση τώρα" aria-label="Ανανέωση">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Branding Titles -->
+      <div class="brand-section">
+        <h1 class="app-title">
+          <span>Σχολική Εκδρομή 2027</span>
+        </h1>
+        <p class="app-subtitle">Ζωντανό Χρονολόγιο Ενημέρωσης Γονέων &amp; Κηδεμόνων</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       MAIN APP CONTENT
+       ======================================================================== -->
+  <main class="app-container">
+
+    <!-- Status & Metrics Card -->
+    <section class="summary-card" aria-label="Σύνοψη κατάστασης εκδρομής">
+      <!-- Network Warning Banner -->
+      <div id="networkBanner" class="network-banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="networkBannerText">Προσωρινή δυσκολία επικοινωνίας. Προσπάθεια επανασύνδεσης...</span>
+      </div>
+
+      <!-- Stats row -->
+      <div class="summary-row">
+        <div class="summary-stats">
+          <div class="stat-chip" title="Συνολικός αριθμός καταχωρημένων γεγονότων">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Ενημερώσεις: <strong id="totalCountDisplay">0</strong></span>
+          </div>
+
+          <div class="stat-chip" title="Ώρα τελευταίου επιτυχούς ελέγχου">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Έλεγχος: <strong id="lastCheckedTime">--:--:--</strong></span>
+          </div>
+        </div>
+
+        <!-- Auto-refresh countdown indicator -->
+        <div class="sync-status-wrapper">
+          <div class="refresh-countdown-pill" title="Χρόνος μέχρι τον επόμενο αυτόματο έλεγχο">
+            <svg class="mini-progress-ring" viewBox="0 0 24 24">
+              <circle class="bg" cx="12" cy="12" r="9"></circle>
+              <circle id="countdownRing" class="bar" cx="12" cy="12" r="9" stroke-dasharray="56.54" stroke-dashoffset="0"></circle>
+            </svg>
+            <span id="countdownText">30s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Filter Bar -->
+      <div class="search-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="text" 
+          id="searchInput" 
+          class="search-input" 
+          placeholder="Αναζήτηση στα γεγονότα (π.χ. άφιξη, στάση, φαγητό)..." 
+          autocomplete="off" 
+        />
+        <button id="searchClearBtn" class="search-clear-btn" title="Καθαρισμός αναζήτησης" aria-label="Καθαρισμός">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- Timeline Updates Stream -->
+    <section id="timelineWrapper" class="timeline-container" aria-label="Χρονολόγιο ενημερώσεων">
+      <!-- Initial Loading Skeleton Shimmer -->
+      <div id="loadingSkeleton" style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
+        <div class="skeleton-item">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line medium"></div>
+          <div class="skeleton-line long"></div>
+        </div>
+        <div class="skeleton-item">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line medium"></div>
+        </div>
+        <div class="skeleton-item">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line medium"></div>
+          <div class="skeleton-line long"></div>
+        </div>
+      </div>
+
+      <!-- Feed Container (Dynamic rendering) -->
+      <div id="feedList" style="display: none; flex-direction: column; gap: 16px; width: 100%;"></div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div class="empty-title">Δεν υπάρχουν ακόμα καταχωρήσεις</div>
+        <div class="empty-text">Η σελίδα παρακολουθεί ενεργά το φύλλο ενημέρωσης και θα ανανεωθεί μόλις προστεθεί νέο γεγονός από τους εκπαιδευτικούς.</div>
+      </div>
+    </section>
+
+    <!-- Footer Information -->
+    <footer class="app-footer">
+      <div class="footer-row">
+        <div class="footer-badge">
+          <span>Αυτόματος έλεγχος κάθε 30 δευτερόλεπτα</span>
+        </div>
+        <button id="infoBtn" class="footer-info-btn" type="button" aria-label="System & License Information" title="About / License">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Toast Notification Message -->
+  <div id="toast" class="toast-container" role="status" aria-live="polite">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span id="toastMessage">Νέα ενημέρωση καταχωρήθηκε!</span>
+  </div>
+
+  <!-- System & License Information Modal (English) -->
+  <div id="infoModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <button id="infoModalCloseBtn" class="modal-close-btn" type="button" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="modal-header">
+        <div class="modal-icon-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </div>
+        <h2 id="modalTitle" class="modal-title">Live School Trip Tracker</h2>
+        <span id="modalVersion" class="modal-version">Version 1.2.0</span>
+      </div>
+
+      <div class="modal-divider"></div>
+
+      <div class="modal-body">
+        <div class="info-row">
+          <span class="info-label">PROGRAM ARCHITECT</span>
+          <span class="info-value">George Petrakis</span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">COPYRIGHT</span>
+          <span class="info-value">&copy; 2026 George Petrakis</span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">LICENSE</span>
+          <span class="info-value">
+            <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer" class="license-link">
+              <span>GNU General Public License v3 (GPLv3)</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       VANILLA ES6+ JAVASCRIPT APPLICATION LOGIC
+       ======================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ======================================================================
+      // CONFIGURATION & CONSTANTS
+      // 💡 Το URL λαμβάνεται από το CSV_DATA_URL στην κεφαλίδα (<head>) του αρχείου.
+      // Εναλλακτικά, υποστηρίζει και παράμετρο URL: ?csv=https://...
+      // ======================================================================
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDemoMode = urlParams.get('demo') === 'true';
+      const CSV_URL = urlParams.get('csv') || 
+                      (typeof CSV_DATA_URL !== 'undefined' ? CSV_DATA_URL : 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQKv_plN7sVuSLj-oTUvUFvBd8Es3UU48cl6H0g3Gna9KR1wL-SbAQ6Ga7kJ-ozlOeyfsUzVeDB980G/pub?gid=0&single=true&output=csv');
+      const POLL_INTERVAL_SECONDS = isDemoMode ? 8 : ((typeof REFRESH_INTERVAL_SECONDS !== 'undefined') ? REFRESH_INTERVAL_SECONDS : 30);
+      const RING_CIRCUMFERENCE = 56.54; // 2 * pi * 9
+
+      // ======================================================================
+      // APPLICATION STATE
+      // ======================================================================
+      let rawItems = [];           // Full list of parsed entries (LIFO order)
+      let displayedItems = [];     // Currently displayed (after search filtering)
+      let lastDataHash = '';       // For smart diffing to avoid unnecessary DOM repaints
+      let secondsRemaining = POLL_INTERVAL_SECONDS;
+      let pollTimer = null;
+      let countdownTimer = null;
+      let isFetching = false;
+      // In Demo mode sound is ON by default; otherwise it respects user preference in localStorage
+      let soundEnabled = isDemoMode ? true : (localStorage.getItem('trip_tracker_sound') === 'true');
+      let audioCtx = null;
+      let searchTerm = '';
+
+      // Unlock mobile browser Web Audio context on the first touch or click
+      const unlockAudio = () => {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!audioCtx && AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+        } catch (e) {}
+      };
+      window.addEventListener('click', unlockAudio, { once: true, passive: true });
+      window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+
+      // ======================================================================
+      // DOM ELEMENT SELECTORS
+      // ======================================================================
+      const demoBanner = document.getElementById('demoBanner');
+      const demoPauseBtn = document.getElementById('demoPauseBtn');
+      const demoPauseIcon = document.getElementById('demoPauseIcon');
+      const demoPauseText = document.getElementById('demoPauseText');
+      const demoResetBtn = document.getElementById('demoResetBtn');
+      const demoExitBtn = document.getElementById('demoExitBtn');
+      const feedList = document.getElementById('feedList');
+      const loadingSkeleton = document.getElementById('loadingSkeleton');
+      const emptyState = document.getElementById('emptyState');
+      const lastCheckedTimeEl = document.getElementById('lastCheckedTime');
+      const totalCountDisplay = document.getElementById('totalCountDisplay');
+      const refreshBtn = document.getElementById('refreshBtn');
+      const countdownRing = document.getElementById('countdownRing');
+      const countdownText = document.getElementById('countdownText');
+      const networkBanner = document.getElementById('networkBanner');
+      const networkBannerText = document.getElementById('networkBannerText');
+      const searchInput = document.getElementById('searchInput');
+      const searchClearBtn = document.getElementById('searchClearBtn');
+      const soundToggleBtn = document.getElementById('soundToggleBtn');
+      const soundIconOn = document.getElementById('soundIconOn');
+      const soundIconOff = document.getElementById('soundIconOff');
+      const themeToggleBtn = document.getElementById('themeToggleBtn');
+      const themeIconSun = document.getElementById('themeIconSun');
+      const themeIconMoon = document.getElementById('themeIconMoon');
+      const shareBtn = document.getElementById('shareBtn');
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      const infoBtn = document.getElementById('infoBtn');
+      const infoModal = document.getElementById('infoModal');
+      const infoModalCloseBtn = document.getElementById('infoModalCloseBtn');
+
+      // ======================================================================
+      // ROBUST RFC 4180 CSV PARSER (PURE JS)
+      // Handles quotes, commas inside quotes, multi-line values, and escaped quotes
+      // ======================================================================
+      function parseCSV(text) {
+        const rows = [];
+        let row = [''];
+        let inQuotes = false;
+        let i = 0;
+        const n = text.length;
+
+        while (i < n) {
+          const c = text[i];
+          const next = i + 1 < n ? text[i + 1] : '';
+
+          if (c === '"') {
+            if (inQuotes && next === '"') {
+              row[row.length - 1] += '"';
+              i += 2;
+              continue;
+            } else {
+              inQuotes = !inQuotes;
+              i++;
+              continue;
+            }
+          }
+
+          if (c === ',' && !inQuotes) {
+            row.push('');
+            i++;
+            continue;
+          }
+
+          if ((c === '\r' || c === '\n') && !inQuotes) {
+            if (c === '\r' && next === '\n') {
+              i++;
+            }
+            rows.push(row);
+            row = [''];
+            i++;
+            continue;
+          }
+
+          row[row.length - 1] += c;
+          i++;
+        }
+
+        if (row.length > 1 || (row.length === 1 && row[0].trim() !== '')) {
+          rows.push(row);
+        }
+
+        return rows;
+      }
+
+      // Clean & transform rows:
+      // Skip empty header rows or header titles, normalize values, and reverse for LIFO
+      function transformRows(rows) {
+        const items = [];
+        for (let idx = 0; idx < rows.length; idx++) {
+          const r = rows[idx];
+          if (!r || r.length === 0) continue;
+
+          const time = (r[0] || '').trim();
+          const event = (r[1] || '').trim();
+          const comment = (r[2] || '').trim();
+
+          // Skip completely blank rows
+          if (!time && !event && !comment) continue;
+
+          // Skip header row if it contains 'Ώρα' or 'Γεγονός'
+          if (time.toLowerCase() === 'ώρα' || event.toLowerCase() === 'γεγονός') {
+            continue;
+          }
+
+          items.push({
+            id: `item-${items.length}`,
+            time: time,
+            event: event,
+            comment: comment,
+            originalIndex: items.length + 1
+          });
+        }
+
+        // Return reversed (LIFO: newest update first)
+        return items.reverse();
+      }
+
+      // Fast hashing function to detect real data modifications
+      function computeDataHash(items) {
+        return items.map(item => `${item.time}###${item.event}###${item.comment}`).join('|||');
+      }
+
+      // ======================================================================
+      // DEMO SIMULATION ENGINE (Active ONLY when URL contains ?demo=true)
+      // ======================================================================
+      const DEMO_ENTRIES = [
+        { time: '08:15', event: 'Συγκέντρωση στο Σχολείο 🎒', comment: 'Όλοι οι μαθητές έχουν φτάσει στην ώρα τους. Έλεγχος παρουσιών και προετοιμασία.' },
+        { time: '08:40', event: 'Επιβίβαση στα Λεωφορεία 🚌', comment: 'Όλα τα παιδιά είναι στις θέσεις τους και έχουν δέσει τις ζώνες ασφαλείας.' },
+        { time: '09:00', event: 'Αναχώρηση από το Σχολείο! 👋', comment: 'Ξεκινήσαμε με εξαιρετικό καιρό και πολύ καλή διάθεση για την εκδρομή μας!' },
+        { time: '10:15', event: 'Σύντομη Στάση στον Ισθμό 🚻🥐', comment: 'Διάλειμμα για κολατσιό, νερό και τουαλέτα. Όλα τα παιδιά είναι υπό συνεχή επίβλεψη.' },
+        { time: '10:45', event: 'Συνεχίζουμε τη διαδρομή 🛣️', comment: 'Επιβιβαστήκαμε εγκαίρως. Επόμενος σταθμός: Πάτρα.' },
+        { time: '12:10', event: 'Άφιξη στο Αρχαιολογικό Μουσείο 🏛️', comment: 'Ασφαλής άφιξη στον χώρο. Ξεκινάει η ξενάγηση με τους υπεύθυνους ξεναγούς ανά τμήμα.' },
+        { time: '13:30', event: 'Εστία Επιστημών: Βιωματικό Εργαστήριο 🔬✨', comment: 'Τα παιδιά συμμετέχουν με τεράστιο ενδιαφέρον στα διαδραστικά πειράματα φυσικής!' },
+        { time: '14:45', event: 'Μεσημεριανό Γεύμα & Ξεκούραση 🍝🥗', comment: 'Όλοι απολαμβάνουν το φαγητό τους σε προστατευμένο χώρο εστίασης. Όλα τα παιδιά είναι χορτάτα και χαρούμενα.' },
+        { time: '16:00', event: 'Περίπατος & Ομαδική Φωτογραφία 📸🌳', comment: 'Όμορφες αναμνηστικές φωτογραφίες και χαμόγελα πριν την ετοιμασία αναχώρησης.' },
+        { time: '16:45', event: 'Αναχώρηση για την Επιστροφή 🎒🚌', comment: 'Επιβιβαστήκαμε στα λεωφορεία και ξεκινήσαμε το ταξίδι του γυρισμού προς το σχολείο.' },
+        { time: '18:15', event: 'Σύντομη στάση ξεκούρασης (Ισθμός) 🚻', comment: 'Στάση 15 λεπτών για νερό και τουαλέτα.' },
+        { time: '18:40', event: 'Συναντήσαμε κίνηση στον δρόμο 🚦', comment: 'Εκτιμώμενη ώρα άφιξης στο Σχολείο: 19:30. Σας κρατάμε ενήμερους.' },
+        { time: '19:30', event: 'Άφιξη στο Σχολείο μας! 🏠🥰', comment: 'Επιστρέψαμε ασφαλείς και γεμάτοι υπέροχες εμπειρίες! Σας ευχαριστούμε πολύ.' }
+      ];
+
+      let demoCount = 3; // Starts with first 3 morning posts
+      let demoIsPaused = false;
+
+      function buildDemoItems(count) {
+        const slice = DEMO_ENTRIES.slice(0, count);
+        const items = slice.map((item, idx) => ({
+          id: `demo-${idx}`,
+          time: item.time,
+          event: item.event,
+          comment: item.comment,
+          originalIndex: idx + 1
+        }));
+        return items.reverse(); // LIFO (newest on top)
+      }
+
+      function updateDemoStep(isManual = false) {
+        if (demoIsPaused && !isManual) return;
+
+        if (isManual) {
+          refreshBtn.classList.add('is-spinning');
+          refreshBtn.disabled = true;
+          setTimeout(() => {
+            refreshBtn.classList.remove('is-spinning');
+            refreshBtn.disabled = false;
+          }, 500);
+        }
+
+        // When all demo entries are published, loop back after a toast
+        if (demoCount >= DEMO_ENTRIES.length) {
+          showToast('Ολοκληρώθηκε ο κύκλος! Επανεκκίνηση demo...');
+          demoCount = 3;
+          rawItems = buildDemoItems(demoCount);
+          lastDataHash = computeDataHash(rawItems);
+          renderTimeline(false, false);
+          resetCountdown();
+          return;
+        }
+
+        demoCount++;
+        rawItems = buildDemoItems(demoCount);
+        lastDataHash = computeDataHash(rawItems);
+
+        const now = new Date();
+        lastCheckedTimeEl.textContent = now.toLocaleTimeString('el-GR', {
+          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        });
+
+        renderTimeline(false, true);
+        playNotificationChime();
+        const latest = DEMO_ENTRIES[demoCount - 1];
+        showToast('Νέα ενημέρωση: ' + latest.event);
+        resetCountdown();
+      }
+
+      function exitDemoMode() {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('demo');
+        const query = url.searchParams.toString();
+        window.location.href = url.pathname + (query ? '?' + query : '') + url.hash;
+      }
+
+      function toggleDemoPause() {
+        demoIsPaused = !demoIsPaused;
+        if (demoIsPaused) {
+          demoPauseIcon.textContent = '▶️';
+          demoPauseText.textContent = 'Συνέχιση';
+          showToast('Η προσομοίωση τέθηκε σε παύση');
+        } else {
+          demoPauseIcon.textContent = '⏸️';
+          demoPauseText.textContent = 'Παύση';
+          showToast('Η προσομοίωση συνεχίζεται');
+        }
+      }
+
+      function resetDemo() {
+        demoCount = 3;
+        rawItems = buildDemoItems(demoCount);
+        lastDataHash = computeDataHash(rawItems);
+        renderTimeline(true, false);
+        resetCountdown();
+        showToast('Επανεκκίνηση demo από την αρχή!');
+      }
+
+      // ======================================================================
+      // SOUND CHIME (WEB AUDIO API - SYNTHESIZED)
+      // Soft, pleasant double-bell notification
+      // ======================================================================
+      function playNotificationChime() {
+        if (!soundEnabled) return;
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          if (!audioCtx) {
+            audioCtx = new AudioContextClass();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+
+          const now = audioCtx.currentTime;
+          
+          // First tone (587.33 Hz - D5)
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(587.33, now);
+          gain1.gain.setValueAtTime(0.001, now);
+          gain1.gain.exponentialRampToValueAtTime(0.2, now + 0.04);
+          gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+          osc1.connect(gain1);
+          gain1.connect(audioCtx.destination);
+          osc1.start(now);
+          osc1.stop(now + 0.36);
+
+          // Second higher tone (880 Hz - A5)
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(880, now + 0.12);
+          gain2.gain.setValueAtTime(0.001, now + 0.12);
+          gain2.gain.exponentialRampToValueAtTime(0.25, now + 0.16);
+          gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.start(now + 0.12);
+          osc2.stop(now + 0.66);
+        } catch (err) {
+          console.warn('Audio chime error:', err);
+        }
+      }
+
+      // ======================================================================
+      // TOAST NOTIFICATIONS
+      // ======================================================================
+      let toastTimeout = null;
+      function showToast(msg) {
+        toastMessage.textContent = msg;
+        toast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3200);
+      }
+
+      // ======================================================================
+      // DOM RENDERING & TIMELINE BUILDING
+      // ======================================================================
+      function renderTimeline(isFirstLoad = false, hasNewItems = false) {
+        const filtered = rawItems.filter(item => {
+          if (!searchTerm) return true;
+          const q = searchTerm.toLowerCase();
+          return item.event.toLowerCase().includes(q) ||
+                 item.comment.toLowerCase().includes(q) ||
+                 item.time.toLowerCase().includes(q);
+        });
+
+        displayedItems = filtered;
+        totalCountDisplay.textContent = rawItems.length;
+
+        // Hide skeleton
+        loadingSkeleton.style.display = 'none';
+
+        if (filtered.length === 0) {
+          feedList.style.display = 'none';
+          emptyState.style.display = 'flex';
+          return;
+        }
+
+        emptyState.style.display = 'none';
+        feedList.style.display = 'flex';
+
+        // Build HTML string
+        const html = filtered.map((item, index) => {
+          const isLatest = index === 0 && !searchTerm;
+          
+          // Format Time badge
+          const timeDisplay = item.time ? escapeHtml(item.time) : 'Ενημέρωση';
+          
+          // Check for keywords to highlight (e.g. ETA or arrival)
+          let commentHtml = '';
+          if (item.comment) {
+            let safeComment = escapeHtml(item.comment);
+            // Highlight estimated arrival time if detected
+            safeComment = safeComment.replace(/(Εκτιμώμενη ώρα άφιξης[^:]*:\s*\d{1,2}:\d{2})/gi, '<span class="eta-highlight">$1</span>');
+            
+            commentHtml = `
+              <div class="comment-block">
+                <svg class="comment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <div class="comment-text">${safeComment}</div>
+              </div>
+            `;
+          }
+
+          return `
+            <article class="timeline-item ${isLatest ? 'is-latest' : ''} ${hasNewItems && isLatest ? 'highlight-flash' : ''}">
+              <div class="timeline-node">
+                <div class="timeline-bullet"></div>
+              </div>
+              <div class="timeline-card">
+                <div class="card-header-row">
+                  <div class="card-badges-left">
+                    <span class="time-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>${timeDisplay}</span>
+                    </span>
+                    ${isLatest ? `
+                      <span class="badge-new">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        ΝΕΟ
+                      </span>
+                    ` : ''}
+                  </div>
+                  <span class="badge-index">#${item.originalIndex}</span>
+                </div>
+                <h2 class="event-title">${escapeHtml(item.event || 'Ενημέρωση')}</h2>
+                ${commentHtml}
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        feedList.innerHTML = html;
+      }
+
+      // XSS Protection Helper
+      function escapeHtml(str) {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // ======================================================================
+      // DATA FETCHING & POLLING ENGINE
+      // ======================================================================
+      async function fetchData(isManual = false) {
+        if (isFetching) return;
+        isFetching = true;
+
+        if (isManual) {
+          refreshBtn.classList.add('is-spinning');
+          refreshBtn.disabled = true;
+        }
+
+        // Cache-busting URL with timestamp
+        const cacheBuster = `_nocache=${Date.now()}`;
+        const fetchUrl = CSV_URL.includes('?') 
+          ? `${CSV_URL}&${cacheBuster}` 
+          : `${CSV_URL}?${cacheBuster}`;
+
+        try {
+          // Standard GET request without custom headers prevents CORS preflight failure
+          const response = await fetch(fetchUrl);
+
+          if (!response.ok) {
+            throw new Error(`HTTP Error ${response.status}`);
+          }
+
+          const csvText = await response.text();
+
+          // Detect if Google redirected to login page (when sheet is unpublished)
+          if (csvText.trim().startsWith('<!DOCTYPE') || csvText.includes('<html')) {
+            throw new Error('Το φύλλο δεν είναι δημοσιευμένο ως δημόσιο CSV');
+          }
+
+          const parsedRows = parseCSV(csvText);
+          const newItems = transformRows(parsedRows);
+          const newHash = computeDataHash(newItems);
+
+          // Save successful state to cache for offline resilience
+          if (newItems.length > 0) {
+            try {
+              localStorage.setItem('trip_tracker_cached_items', JSON.stringify(newItems));
+            } catch (e) {}
+          }
+
+          // Update Last Checked Time in Greek format
+          const now = new Date();
+          const timeString = now.toLocaleTimeString('el-GR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          });
+          lastCheckedTimeEl.textContent = timeString;
+
+          // Clear network error banner if active
+          networkBanner.classList.remove('show');
+
+          // SMART DOM CHECK:
+          // Check if data actually changed
+          if (newHash !== lastDataHash) {
+            const isInitial = lastDataHash === '';
+            const hadFewerItems = !isInitial && newItems.length > rawItems.length;
+
+            rawItems = newItems;
+            lastDataHash = newHash;
+
+            renderTimeline(isInitial, hadFewerItems);
+
+            if (hadFewerItems) {
+              playNotificationChime();
+              showToast('Νέα ενημέρωση από την εκδρομή!');
+            } else if (isManual && !isInitial) {
+              showToast('Τα δεδομένα ανανεώθηκαν επιτυχώς.');
+            }
+          } else {
+            // Data unchanged: Just inform on manual click
+            if (isManual) {
+              showToast('Όλα τα δεδομένα είναι ενημερωμένα.');
+            }
+          }
+        } catch (error) {
+          // Always hide the loading skeleton so UI never stays stuck
+          loadingSkeleton.style.display = 'none';
+
+          // Attempt recovery from local cache if this was an initial load failure
+          if (rawItems.length === 0) {
+            try {
+              const cached = localStorage.getItem('trip_tracker_cached_items');
+              if (cached) {
+                const parsedCached = JSON.parse(cached);
+                if (Array.isArray(parsedCached) && parsedCached.length > 0) {
+                  rawItems = parsedCached;
+                  lastDataHash = computeDataHash(rawItems);
+                  renderTimeline(true, false);
+                }
+              }
+            } catch (e) {}
+          }
+
+          // If still empty, display reassuring empty state
+          if (rawItems.length === 0) {
+            feedList.style.display = 'none';
+            emptyState.style.display = 'flex';
+            const emptyTitle = emptyState.querySelector('.empty-title');
+            const emptyText = emptyState.querySelector('.empty-text');
+            if (emptyTitle) emptyTitle.textContent = 'Αναμονή για δημοσίευση εκδρομής';
+            if (emptyText) emptyText.textContent = 'Το φύλλο εκδρομής δεν είναι δημοσιευμένο αυτή τη στιγμή. Η εφαρμογή πραγματοποιεί αυτόματο επανέλεγχο κάθε 30 δευτερόλεπτα.';
+          }
+
+          // Update check time
+          const now = new Date();
+          lastCheckedTimeEl.textContent = now.toLocaleTimeString('el-GR', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+          });
+
+          networkBannerText.textContent = 'Αναμονή σύνδεσης με το φύλλο εκδρομής. Επόμενος αυτόματος έλεγχος σύντομα...';
+          networkBanner.classList.add('show');
+
+          if (isManual) {
+            showToast('Αδυναμία σύνδεσης. Ελέγξτε τη δημοσίευση του φύλλου.');
+          }
+        } finally {
+          isFetching = false;
+          if (isManual) {
+            setTimeout(() => {
+              refreshBtn.classList.remove('is-spinning');
+              refreshBtn.disabled = false;
+            }, 500);
+          }
+          // Reset countdown to full 30s
+          resetCountdown();
+        }
+      }
+
+      // ======================================================================
+      // SMART AUTO-REFRESH & COUNTDOWN CONTROLLER
+      // ======================================================================
+      let activePollInterval = POLL_INTERVAL_SECONDS;
+
+      function getActivePollInterval() {
+        if (isDemoMode) return 8;
+        const base = (typeof REFRESH_INTERVAL_SECONDS !== 'undefined') ? REFRESH_INTERVAL_SECONDS : 30;
+        // Jitter: ±2s random offset so 80 phones desynchronize and never hit Google at the exact same millisecond
+        const jitter = Math.floor(Math.random() * 5) - 2;
+
+        // If tab is hidden in background AND audio chime is OFF, relax interval to 60s
+        // If audio chime is ON, maintain 30s so the parent hears the chime from the background!
+        if (document.hidden && !soundEnabled) {
+          return Math.max(45, 60 + jitter);
+        }
+
+        return Math.max(15, base + jitter);
+      }
+
+      function resetCountdown() {
+        activePollInterval = getActivePollInterval();
+        secondsRemaining = activePollInterval;
+        updateCountdownUI();
+      }
+
+      function updateCountdownUI() {
+        countdownText.textContent = `${secondsRemaining}s`;
+        const offset = RING_CIRCUMFERENCE - (secondsRemaining / activePollInterval) * RING_CIRCUMFERENCE;
+        countdownRing.style.strokeDashoffset = offset;
+      }
+
+      // Instant refresh when user returns to tab after being away
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !isDemoMode) {
+          if (secondsRemaining <= activePollInterval - 15 || secondsRemaining <= 5) {
+            fetchData(false);
+          }
+        }
+      });
+
+      function startPollingEngine() {
+        if (isDemoMode) {
+          // Display the demo banner
+          demoBanner.style.display = 'block';
+
+          // Update footer text to inform about demo
+          const footerBadge = document.querySelector('.footer-badge span');
+          if (footerBadge) {
+            footerBadge.textContent = 'Προσομοίωση Demo • Ανανέωση ανά 8δ';
+          }
+
+          // Initial load with first 3 entries
+          demoCount = 3;
+          rawItems = buildDemoItems(demoCount);
+          lastDataHash = computeDataHash(rawItems);
+          const now = new Date();
+          lastCheckedTimeEl.textContent = now.toLocaleTimeString('el-GR', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+          });
+          renderTimeline(true, false);
+          resetCountdown();
+
+          // Connect Demo Controls
+          demoExitBtn.addEventListener('click', exitDemoMode);
+          demoPauseBtn.addEventListener('click', toggleDemoPause);
+          demoResetBtn.addEventListener('click', resetDemo);
+
+          // Manual refresh in demo mode triggers next demo update immediately
+          refreshBtn.addEventListener('click', () => updateDemoStep(true));
+
+          // Run countdown every second
+          if (countdownTimer) clearInterval(countdownTimer);
+          countdownTimer = setInterval(() => {
+            if (demoIsPaused) return;
+            secondsRemaining--;
+            if (secondsRemaining <= 0) {
+              secondsRemaining = POLL_INTERVAL_SECONDS;
+              updateCountdownUI();
+              updateDemoStep(false);
+            } else {
+              updateCountdownUI();
+            }
+          }, 1000);
+          return;
+        }
+
+        // --- NORMAL LIVE MODE (No ?demo=true) ---
+        fetchData(false);
+        refreshBtn.addEventListener('click', () => fetchData(true));
+
+        // Tick every 1 second for smooth countdown
+        if (countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(() => {
+          secondsRemaining--;
+          if (secondsRemaining <= 0) {
+            resetCountdown();
+            fetchData(false);
+          } else {
+            updateCountdownUI();
+          }
+        }, 1000);
+      }
+
+      // ======================================================================
+      // THEME TOGGLE (LIGHT / DARK)
+      // ======================================================================
+      function initTheme() {
+        const savedTheme = localStorage.getItem('trip_tracker_theme');
+        if (savedTheme) {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+          updateThemeIcons(savedTheme);
+        } else {
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          updateThemeIcons(prefersDark ? 'dark' : 'light');
+        }
+      }
+
+      function updateThemeIcons(theme) {
+        if (theme === 'dark') {
+          themeIconSun.style.display = 'none';
+          themeIconMoon.style.display = 'block';
+        } else {
+          themeIconSun.style.display = 'block';
+          themeIconMoon.style.display = 'none';
+        }
+      }
+
+      themeToggleBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 
+          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', nextTheme);
+        localStorage.setItem('trip_tracker_theme', nextTheme);
+        updateThemeIcons(nextTheme);
+      });
+
+      // ======================================================================
+      // SOUND TOGGLE
+      // ======================================================================
+      function updateSoundUI() {
+        if (soundEnabled) {
+          soundIconOn.style.display = 'block';
+          soundIconOff.style.display = 'none';
+          soundToggleBtn.classList.add('active-bell');
+          soundToggleBtn.setAttribute('title', 'Ήχος ειδοποίησης: ΕΝΕΡΓΟΣ');
+        } else {
+          soundIconOn.style.display = 'none';
+          soundIconOff.style.display = 'block';
+          soundToggleBtn.classList.remove('active-bell');
+          soundToggleBtn.setAttribute('title', 'Ήχος ειδοποίησης: ΑΝΕΝΕΡΓΟΣ (Κάντε κλικ για ενεργοποίηση)');
+        }
+      }
+
+      soundToggleBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('trip_tracker_sound', soundEnabled);
+        updateSoundUI();
+        if (soundEnabled) {
+          playNotificationChime();
+          showToast('Ο ήχος ειδοποίησης ενεργοποιήθηκε!');
+        } else {
+          showToast('Ο ήχος ειδοποίησης απενεργοποιήθηκε.');
+        }
+      });
+
+      // ======================================================================
+      // SHARE FUNCTIONALITY
+      // ======================================================================
+      shareBtn.addEventListener('click', async () => {
+        const shareData = {
+          title: 'Live School Trip Tracker • Ενημέρωση Εκδρομής',
+          text: 'Παρακολουθήστε ζωντανά την πορεία της σχολικής εκδρομής σε πραγματικό χρόνο!',
+          url: window.location.href
+        };
+
+        if (navigator.share) {
+          try {
+            await navigator.share(shareData);
+          } catch (err) {
+            // User cancelled share
+          }
+        } else {
+          try {
+            await navigator.clipboard.writeText(window.location.href);
+            showToast('Ο σύνδεσμος αντιγράφηκε στο πρόχειρο!');
+          } catch (err) {
+            showToast('Σύνδεσμος: ' + window.location.href);
+          }
+        }
+      });
+
+      // ======================================================================
+      // SEARCH & FILTER EVENTS
+      // ======================================================================
+      searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value.trim();
+        searchClearBtn.style.display = searchTerm ? 'flex' : 'none';
+        renderTimeline();
+      });
+
+      searchClearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchTerm = '';
+        searchClearBtn.style.display = 'none';
+        searchInput.focus();
+        renderTimeline();
+      });
+
+
+
+      // ======================================================================
+      // INFO & LICENSE MODAL CONTROLLER
+      // ======================================================================
+      function openInfoModal() {
+        if (infoModal) infoModal.classList.add('open');
+      }
+
+      function closeInfoModal() {
+        if (infoModal) infoModal.classList.remove('open');
+      }
+
+      if (infoBtn) infoBtn.addEventListener('click', openInfoModal);
+      if (infoModalCloseBtn) infoModalCloseBtn.addEventListener('click', closeInfoModal);
+      if (infoModal) {
+        infoModal.addEventListener('click', (e) => {
+          if (e.target === infoModal) closeInfoModal();
+        });
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && infoModal && infoModal.classList.contains('open')) {
+          closeInfoModal();
+        }
+      });
+
+      // ======================================================================
+      // DEVELOPER & LICENSE CONSOLE CREDITS & VERSION SYNC
+      // ======================================================================
+      const currentVersion = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '1.2.0';
+      const modalVersionEl = document.getElementById('modalVersion');
+      if (modalVersionEl) {
+        modalVersionEl.textContent = 'Version ' + currentVersion;
+      }
+
+      console.log(
+        `%c Live School Trip Tracker %c v${currentVersion} %c GPLv3 `,
+        "background: #2563eb; color: #ffffff; padding: 3px 6px; border-radius: 3px 0 0 3px; font-weight: bold; font-family: sans-serif;",
+        "background: #1e293b; color: #ffffff; padding: 3px 6px; font-weight: bold; font-family: sans-serif;",
+        "background: #10b981; color: #ffffff; padding: 3px 6px; border-radius: 0 3px 3px 0; font-weight: bold; font-family: sans-serif;"
+      );
+      console.log(
+        `%cPROGRAM ARCHITECT: George Petrakis\nCopyright (C) 2026 George Petrakis\nVersion: ${currentVersion}\nLicensed under GNU General Public License v3 (GPLv3)\nhttps://www.gnu.org/licenses/gpl-3.0.html`,
+        "color: #475569; font-family: monospace; font-size: 11px; line-height: 1.5;"
+      );
+
+      // ======================================================================
+      // INITIALIZATION
+      // ======================================================================
+      initTheme();
+      updateSoundUI();
+      startPollingEngine();
+
+    })();
+  </script>
+</body>
+</html>
